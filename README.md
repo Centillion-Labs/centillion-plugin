@@ -5,7 +5,9 @@ assistant. The plugin connects the assistant to Centillion's MCP server
 (`https://app.cntillion.com/mcp`) and adds a skill that walks it through
 finding or creating an agent, changing its draft, adding tools, writing and
 running tests, and asking for a publish. Publishing, traffic changes, batch
-launches and archiving wait for a person's approval in the dashboard.
+launches, archiving, buying or routing a phone number, recording retention
+and call limits, and turning on an agent's email replies wait for a person's
+approval in the dashboard.
 
 ## Install
 
