@@ -1,0 +1,15 @@
+{
+  "name": "centillion",
+  "owner": {
+    "name": "Centillion Labs",
+    "url": "https://cntillion.com"
+  },
+  "description": "Centillion Labs plugins for AI assistants.",
+  "plugins": [
+    {
+      "name": "centillion",
+      "source": "./",
+      "description": "Build and test Centillion AI agents from chat through Centillion's MCP server."
+    }
+  ]
+}
