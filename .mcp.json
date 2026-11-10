@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "centillion": {
+      "type": "http",
+      "url": "https://app.cntillion.com/mcp",
+      "oauth": {
+        "scopes": "user:org:read"
+      }
+    }
+  }
+}
