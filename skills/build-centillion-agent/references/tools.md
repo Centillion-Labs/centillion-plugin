@@ -15,6 +15,10 @@ to get the next page.
 | `get_voice_settings` | `agentId`, `branchId` | The branch's voice settings and revision. `sharedFields` change only in the dashboard. |
 | `list_tools` | `limit` (1 to 100), `cursor` | Workspace tools: `id`, `name`, `description`, `kind`, `revision`, `yourAccess`, `agentIds`, `updatedAt`, `headerNames`, and for an `MCP_SERVER` tool `offeredTools` (what discovery found) and `allowedTools` (the enabled ones). Other settings and header values are never returned. |
 | `list_batch_calls` | `agentId`, `limit`, `cursor` | Batches of outbound calls: id, name, agent, status, recipient count. |
+| `list_campaigns` | `agentId`, `status`, `search`, `limit`, `cursor` | Campaigns, newest first: id, name, agent, status, channel, `keepOpen`, lead counts. |
+| `get_campaign` | `campaignId` | One campaign with its lead policy and progress: leads waiting, on a call, being settled and finished by disposition, calls waiting by type, and the next call. |
+| `list_campaign_leads` | `campaignId`, `state` (`in_progress` or `finished`), `dispositions`, `limit`, `cursor` | Leads, newest first: id, your `recipientId`, state, disposition, next call, call counters. Numbers, names and variables need the conversation setting. |
+| `list_campaign_attention` | `campaignId` (every campaign's when left out), `includeResolved`, `limit`, `cursor` | What needs a person: leads that could not be processed or gave an unusable callback time or number, and campaigns that paused themselves, each with its campaign, `reasonCode` and whether a retry can help. A lead's number needs the conversation setting. |
 | `list_conversations` | `agentId`, `startDate`, `endDate`, `limit`, `cursor` | Conversation ids, newest first. Needs the conversation setting. |
 | `get_conversation` | `agentId`, `conversationId`, `limit`, `cursor` | Messages, newest page first, and the analysis. Needs the conversation setting. |
 | `get_test_results` | `agentId`, `testId`, `limit` (1 to 20), `cursor` | Test runs: `testName`, `versionId`, `target`, `repeats`, `passed`, `failed`, `noVerdict`, `running`, `reasonsHidden`, and per repeat `status`, `reason`, `missingActions`, `unexpectedActions`, `error`. `target` is `{ kind: "draft", branchId, yourDraft, draftFingerprint }`, `{ kind: "branch", branchId, versionId }`, or `null` for a run started outside an assistant or one that did not run on the queued draft. |
@@ -92,6 +96,24 @@ results.
 | `request_traffic_change` | `agentId`, `allocations` (`branchId` and `percent` each, adding up to 100) | Splitting conversations between branches. Branches left out get none. |
 | `request_batch_launch` | `batchId` | Launching a batch of outbound calls as it is set up now. |
 | `request_archive` | `target`: `{ kind: "branch", agentId, branchId }` or `{ kind: "tool", toolId }` | Archiving a branch or a workspace tool. |
+
+## Running campaigns
+
+A campaign calls people, so `create_campaign` only sets one up: it is saved
+as a draft that calls nobody, and the answer is an approval link where a
+person launches it and agrees to the outbound terms. Once a campaign runs,
+these act on it directly.
+
+| Tool | Arguments | Notes |
+| --- | --- | --- |
+| `create_campaign` | The Campaigns API's create body: `name`, `agentId`, a phone number or WhatsApp account, `recipients` (up to 1,000), optional start, policy groups and `keepOpen` | Answers like the tools above, with an `approvalUrl`. A campaign that could not launch is refused and not kept. |
+| `add_campaign_leads` | `campaignId`, `leads` (up to 200, shaped like the create request's recipients) | Only a `keepOpen` campaign that has not finished. The person who launched it approved a campaign that takes leads later, so they are called like the others, inside the calling windows. A lead already in the campaign comes back as it is. |
+| `pause_campaign` | `campaignId` | No new calls until resumed; calls under way carry on. |
+| `resume_campaign` | `campaignId` | Calls again, inside the calling windows. |
+| `cancel_campaign` | `campaignId` | Waiting leads finish as cancelled. Can't be undone. |
+
+Attention items are resolved and retried on the campaign's page or through
+the Campaigns API.
 
 ## Refusals worth knowing
 
