@@ -145,9 +145,10 @@ tools that read. Argument details and refusal codes are in
   anyway, do not repeat it or send it in a tool call; point them to the
   dashboard field instead.
 - **A person approves anything that reaches customers.** `request_publish`,
-  `request_traffic_change`, `request_batch_launch` and `request_archive` only
-  return a link. Say that the change waits for approval, and never say it is
-  live until the person confirms they approved it.
+  `request_traffic_change`, `request_batch_launch`, `request_archive` and
+  `create_campaign` only return a link. Say that the change waits for
+  approval, and never say it is live until the person confirms they approved
+  it.
 - **Conversations are readable only where the workspace allows it.**
   `list_conversations` and `get_conversation` refuse until an owner turns on
   **Allow AI assistants to read conversations** in **Workspace settings → AI
