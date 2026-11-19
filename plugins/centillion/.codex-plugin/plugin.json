@@ -1,0 +1,30 @@
+{
+  "name": "centillion",
+  "version": "0.2.0",
+  "description": "Build, test and run Centillion AI agents for phone calls and chats from Codex. Publishing, phone numbers and campaigns wait for a person's approval.",
+  "author": {
+    "name": "Centillion Labs",
+    "url": "https://cntillion.com"
+  },
+  "homepage": "https://cntillion.com/mcp",
+  "repository": "https://github.com/Centillion-Labs/centillion-plugin",
+  "keywords": ["centillion", "ai-agents", "voice-agents", "customer-support", "mcp"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Centillion",
+    "shortDescription": "AI agents for calls and chats",
+    "longDescription": "Create AI agents that answer your business's phone calls, website chat and messages. Write their instructions, add knowledge, test them, read conversations and run campaigns from Codex. A person approves anything that goes live.",
+    "developerName": "Centillion Labs",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Build an AI receptionist for my business and let me try it",
+      "Write tests for my agent's booking flow and run them on my draft",
+      "Which calls yesterday ended without a booking, and why?"
+    ],
+    "websiteURL": "https://cntillion.com/",
+    "privacyPolicyURL": "https://cntillion.com/privacy",
+    "termsOfServiceURL": "https://cntillion.com/terms"
+  }
+}

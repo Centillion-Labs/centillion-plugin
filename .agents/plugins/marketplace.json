@@ -1,0 +1,20 @@
+{
+  "name": "centillion",
+  "interface": {
+    "displayName": "Centillion Labs"
+  },
+  "plugins": [
+    {
+      "name": "centillion",
+      "source": {
+        "source": "local",
+        "path": "./plugins/centillion"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

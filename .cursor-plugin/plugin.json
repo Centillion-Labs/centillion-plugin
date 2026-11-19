@@ -1,11 +1,18 @@
 {
   "name": "centillion",
   "displayName": "Centillion",
-  "version": "0.1.0",
-  "description": "Build and test Centillion AI agents from chat through Centillion's MCP server. Publishing waits for a person's approval in the dashboard.",
+  "version": "0.2.0",
+  "description": "Build, test and run Centillion AI agents for phone calls and chats through Centillion's MCP server. Publishing, phone numbers and campaigns wait for a person's approval in the dashboard.",
   "author": {
     "name": "Centillion Labs"
   },
-  "homepage": "https://cntillion.com/docs/developer-guides/mcp",
-  "keywords": ["centillion", "ai-agents", "customer-support", "mcp"]
+  "homepage": "https://cntillion.com/mcp",
+  "keywords": [
+    "centillion",
+    "ai-agents",
+    "customer-support",
+    "mcp"
+  ],
+  "skills": "./plugins/centillion/skills/",
+  "mcpServers": "./mcp.json"
 }
