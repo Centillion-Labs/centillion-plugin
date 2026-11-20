@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "centillion",
-      "source": "./",
-      "description": "Build and test Centillion AI agents from chat through Centillion's MCP server."
+      "source": "./plugins/centillion",
+      "description": "Build, test and run Centillion AI agents for calls and chats through Centillion's MCP server."
     }
   ]
 }

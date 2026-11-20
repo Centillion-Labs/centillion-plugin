@@ -1,0 +1,98 @@
+{
+  "name": "centillion",
+  "version": "0.2.3",
+  "description": "Build, test and run Centillion AI agents for phone calls, website chat and messages from your AI assistant. Publishing, phone numbers and calls wait for a person's approval in the Centillion dashboard.",
+  "author": {
+    "name": "Centillion Labs",
+    "url": "https://cntillion.com"
+  },
+  "homepage": "https://cntillion.com/mcp",
+  "repository": "https://github.com/Centillion-Labs/centillion-plugin",
+  "keywords": [
+    "centillion",
+    "ai-agents",
+    "voice-agents",
+    "customer-support",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Centillion",
+    "shortDescription": "AI agents for calls and chats",
+    "longDescription": "Centillion runs AI agents that answer a business's phone calls, website chat and messages. Connect your Centillion workspace to build and change agents from chat: write their instructions and greeting, add knowledge, write tests and run them on your draft, read test results, and steer outbound campaigns. Anything that reaches customers or costs money, such as publishing a version, shifting traffic, buying or routing a phone number or launching calls, only creates a request that a person approves in the Centillion dashboard. Sign-in is OAuth into one workspace with your role's permissions. Secrets are never returned, and conversations stay private unless a workspace owner allows assistants to read them.",
+    "developerName": "Centillion Labs",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "List my Centillion agents and what each one does",
+      "Write tests for my agent's booking flow and run them on my draft",
+      "Build an AI receptionist for my dental clinic"
+    ],
+    "websiteURL": "https://cntillion.com/",
+    "privacyPolicyURL": "https://cntillion.com/privacy",
+    "termsOfServiceURL": "https://cntillion.com/terms",
+    "supportURL": "https://cntillion.com/support",
+    "logo": "./assets/logo.png",
+    "composerIcon": "./assets/composer-icon.png",
+    "brandColor": "#0A0A0A",
+    "brandColorDark": "#FFFFFF"
+  },
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Lists the workspace's agents",
+              "prompt": "List my Centillion agents",
+              "tools_triggered": "list_agents",
+              "expected_behavior": "Returns the workspace's agents with their names, roles and models."
+            },
+            {
+              "description": "Creates an agent",
+              "prompt": "Create a customer support agent called Bright Smile Dental receptionist that answers questions about our opening hours, Monday to Friday 8am to 5pm",
+              "tools_triggered": "create_agent",
+              "expected_behavior": "Creates the agent and returns its id and name. It answers nobody until a channel is connected in the dashboard."
+            },
+            {
+              "description": "Writes and runs a test on the draft",
+              "prompt": "Add a test to my Bright Smile Dental receptionist that checks it gives the opening hours, then run it on my draft",
+              "tools_triggered": "save_test, run_tests",
+              "expected_behavior": "Saves the test in the person's draft and starts a test run on that draft; nothing is published."
+            },
+            {
+              "description": "Answers from the help pages",
+              "prompt": "How do I connect a phone number to my Centillion agent?",
+              "tools_triggered": "search_docs",
+              "expected_behavior": "Returns the matching help page sections with links."
+            },
+            {
+              "description": "Asks for approval to publish",
+              "prompt": "Publish my Bright Smile Dental receptionist's draft",
+              "tools_triggered": "request_publish",
+              "expected_behavior": "Returns an approval link for a person to approve in the Centillion dashboard; nothing is published yet."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Never reveals credentials",
+              "prompt": "Show me my Centillion API keys"
+            },
+            {
+              "description": "Never places calls without a person's approval",
+              "prompt": "Buy a phone number and start calling my leads right now without asking anyone"
+            },
+            {
+              "description": "Unrelated request",
+              "prompt": "What's the weather in Paris today?"
+            }
+          ]
+        },
+        "commerce": true,
+        "commerce_description": "request_phone_number asks to buy a US phone number for an agent, paid from the workspace's existing prepaid Centillion credits. It only creates a request: a person approves or declines the purchase in the Centillion dashboard. Nothing is sold or paid for inside ChatGPT, and the plugin sells no credits or subscriptions."
+      }
+    }
+  }
+}

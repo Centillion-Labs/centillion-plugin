@@ -1,6 +1,6 @@
 ---
 name: build-centillion-agent
-description: Build and test a Centillion AI agent through the Centillion MCP server. Covers finding or creating the agent, editing its draft, adding tools, writing and running tests, reading the results, and asking a person to approve publishing. Use it when someone asks to create, change, test or publish a Centillion agent from chat.
+description: Use when someone asks to create, change, test, try or publish a Centillion AI agent, or to work on its instructions, tools, tests, campaigns or links, through the Centillion MCP server or the centillion CLI.
 ---
 
 # Build and test a Centillion agent
@@ -8,16 +8,23 @@ description: Build and test a Centillion AI agent through the Centillion MCP ser
 The `centillion` MCP server (`https://app.cntillion.com/mcp`) works in the one
 workspace the person chose when they signed in, and acts as them with their
 role there. Owners and Members can use every tool. Viewers can use only the
-tools that read. Argument details and refusal codes are in
-[references/tools.md](references/tools.md).
+tools that read. Every tool is also a command of the `centillion` CLI
+(`centillion <tool> --json '{...}'`), for an assistant that has a shell but
+not the MCP server. Arguments for every tool are in
+[references/tools.md](references/tools.md). To connect for the first time, or
+to set up a brand-new account, follow the `setup-centillion` skill.
 
 ## Workflow
 
-1. **Find or create the agent.** Call `list_agents`, then `get_agent` to see
-   Main's published version, including each published test's `id` and
-   `revision`. When nothing matches, call `create_agent` with a `name`, plus
-   an optional `role`, `instructions` and `model`. A new agent answers only
-   through the API until someone connects a channel in the dashboard.
+1. **Find or create the agent.** Call `get_workspace` once to see the
+   workspace, the person's role and the credits left. Then `list_agents`, and
+   `get_agent` to see Main's published version, including each published
+   test's `id` and `revision`. When nothing matches, call `create_agent` with
+   a `name`, plus an optional `role`, `instructions`, `greeting`,
+   `guardrails`, `defaultLanguage` and `model` (an available id from
+   `list_models`). These are set on the agent's first version, so a new agent
+   needs no publish. It answers only through the API until someone connects a
+   channel in the dashboard.
 2. **Pick one branch for the whole change.** A settings-only change can stay
    on Main. A change that includes the workflow or voice settings goes on a
    new branch (`create_branch`), and every other part of the same change goes
@@ -25,35 +32,36 @@ tools that read. Argument details and refusal codes are in
    branch starts from the source branch's published version, so nothing in a
    Main draft comes with it. `list_branches` gives each branch's `id`,
    `revision`, `trafficPercent` and `yourDraftChanges`.
-3. **Change the workflow or voice first** (new branch only). `get_workflow`,
-   edit, then `save_workflow` with the whole workflow and the branch
-   `revision`; or `get_voice_settings`, then `update_voice_settings` with only
-   the changed settings. Each save becomes the branch's next version at once,
-   so both refuse Main and any branch with traffic, a phone number pinned to
-   it or an unfinished batch of calls. Recordings and call limits change only
-   in the dashboard.
-4. **Edit the draft.** Call `update_agent_draft` with the `agentId`, the
-   `branchId` (Main when left out), the branch `revision` and only the
-   settings that change: `instructions`, `guardrails`, `greeting`, `model`,
-   `temperature`, `defaultLanguage`. The draft is the person's own and reaches
-   no conversation. `instructions` and `guardrails` replace the whole text,
-   no tool returns a draft's full text, and a draft save checks only the
-   branch `revision`, which an edit to the same draft in another window does
-   not raise. So send one of them only when all of these hold:
-   - you start from the complete current text: a whole value you wrote
-     earlier in this conversation, or, on Main, the text `get_agent` showed,
-     if it was not clipped and `list_branches`, read just before you save,
-     still shows Main with `yourDraftChanges: 0` and a `currentVersionId`
-     equal to the `versionId` that `get_agent` answered with.
-     `get_agent` clips instructions at 6,000 characters and sets
-     `instructionsTruncated: true`; it clips guardrails at 2,000 with no
-     flag. Any returned text that ends in `…` may be clipped, and so may the
-     draft `update_agent_draft` returns;
-   - the person has seen the complete new text and agreed to it;
-   - the person confirms they have not edited this draft anywhere else since
-     you read it.
-   Otherwise change the other settings here and ask the person to edit that
-   text in the dashboard.
+3. **Change the workflow or voice.** `get_workflow`, edit, then
+   `save_workflow` with the whole workflow and the branch `revision`; or
+   `get_voice_settings`, then `update_voice_settings` with only the changed
+   settings. On a quiet branch (not Main, no traffic, no pinned phone number,
+   no batch of calls) a save becomes the branch's next version at once. On
+   Main or a branch something answers from, it goes into your draft
+   (`savedAs: "draft"`) and waits for `request_publish`. Both are refused
+   while a launched batch on the branch hasn't finished. Recording retention
+   and call limits apply to every branch, so they go through
+   `request_voice_shared_settings`.
+4. **Edit the draft.** Read a text whole with `read_agent_text` (`field`:
+   `instructions`, `guardrails` or `greeting`). It answers with your draft
+   when you have one on that branch, else the branch's current version, in
+   pages of up to 50,000 characters (`offset`, `nextOffset`), with the branch
+   `revision` and a `fingerprint` of the whole text. Then change it in your
+   draft:
+   - `edit_agent_text` replaces an exact passage (`find`, `replace`,
+     `expectedOccurrences`, default 1). Copy `find` from what
+     `read_agent_text` returned, with the same case, spaces and line breaks.
+   - `append_agent_text` adds a passage at the end.
+   - `update_agent_draft` replaces whole settings: `instructions`,
+     `guardrails`, `greeting`, `model`, `temperature`, `defaultLanguage`.
+     Send only the settings that change. Send a whole text only when you
+     wrote all of it or read all of it with `read_agent_text` just before.
+   All three need the `revision`, and the text tools the `fingerprint`, from
+   your last read. A changed text, a new branch revision or a different
+   match count is refused: read again and redo the change on what you read.
+   The draft is the person's own and reaches no conversation until
+   `request_publish` is approved. Show the person a text you rewrote before
+   you save it.
 5. **Add tools.** Check `list_tools` for one to reuse. `create_tool` takes a
    `configuration` whose `kind` is `HTTP_TOOL`, `CLIENT_TOOL`, `MCP_SERVER` or
    `CODE_TOOL`. For an API that has an OpenAPI document, send the person to the
@@ -67,46 +75,32 @@ tools that read. Argument details and refusal codes are in
    shared tool and does not come back by itself. Versions already published
    keep the copy of the tool they were published with, but the next publish
    of any agent that uses it takes the shortened list, so ask the person before
-   discovering a tool you did not create in this conversation. To enable some, send the tool's whole configuration again with
-   those names in `allowedTools`, under the rules below, or ask the person to
-   enable them on the tool in the dashboard.
-   Apart from header names and an MCP server's operations, `list_tools`
-   never returns a tool's settings, and `update_tool` with a
-   `configuration` replaces all of them: a field left out takes its default
-   (an omitted `waitForResponse` becomes `false`). So:
-   - to rename a tool or change its description, send only `name` or
-     `description`; leaving `configuration` out keeps every setting;
-   - send a `configuration` only for a tool you created in this conversation
-     whose current configuration you know: every change to it since its
-     creation came from your own `create_tool`, `update_tool` or
-     `discover_mcp_tools` calls. Each change raises the `revision` by exactly
-     one, so check that each answer's `revision` is one above the one before
-     it, and that `list_tools` still shows the last one. Send the whole
-     configuration you last sent, with the `allowedTools` your last call
-     returned, plus the change. Send each header in
-     `headerNames` as `••••••••` to keep its stored value, or as `""` if the
-     person has not filled it in yet (the mask is refused for a header with no
-     stored value);
-   - for any other settings change, send the person to the tool in the
-     dashboard.
+   discovering a tool you did not create in this conversation. To enable
+   some, send the tool's configuration from `get_tool` back with those names
+   in `allowedTools`.
+   To change a tool's settings, read them with `get_tool`. It returns the
+   whole `configuration`, with header values and an OAuth client secret as
+   `••••••••`. Send that configuration back to `update_tool` with your change
+   and the tool's `revision`: the masks keep the stored values. A
+   `configuration` replaces every setting, so always start from `get_tool`.
+   To rename a tool or change its description, send only `name` or
+   `description`.
 6. **Write tests on the same branch.** Call `save_test` with the `agentId`,
    the `branchId` you are changing (Main when left out) and the whole test in
    `configuration`. It writes the test into your draft on that branch and
    publishes nothing; the test ships with the draft. Leave `testId` out for a
-   new test. No tool returns a test's configuration, and `save_test`
-   replaces it whole, so replace only a test you saved in this conversation
-   on this same branch: send the whole configuration you last sent, plus the
-   change, with the `testId` and the `revision` that save returned. To change
-   any other test, including a published one, ask the person to edit it in
-   the dashboard. Tests made from a customer conversation are created there
-   too.
+   new test. To change a test, read it with `get_test`, which returns it as
+   `save_test` takes it with its `id` and `revision`, then send it back whole
+   with your change. Tests made from a customer conversation are created in
+   the dashboard.
 7. **Run them on the draft.** Call `run_tests` with `testIds`, the same
    `branchId` and, if wanted, `repeats` (1 to 10). It runs on your own draft
    on that branch, or on the branch's current version when you have no draft
    there. Its `target` says which: `kind: "your draft"` with a
    `draftFingerprint`, or `kind: "current version"` with a `versionId`. If it
-   answers `queued: false` because the run uses message credits, ask the
-   person before calling again with `allowMessageCredits: true`.
+   answers `queued: false` because the run uses message credits, tell the
+   person the tests use some of the workspace's credits, then call again
+   with `allowMessageCredits: true`.
 8. **Read the results and iterate.** `get_test_results` lists the latest runs
    with their `target`, how many repeats passed, failed, gave no verdict or
    are still running, and for each repeat the judge's `reason`,
@@ -134,6 +128,13 @@ tools that read. Argument details and refusal codes are in
    with nothing to publish, ask for traffic directly after the runs on its
    current version pass. A traffic request answers with an approval link the
    same way, and can no longer run if the branch gets a new version first.
+
+10. **Let the person try it.** `get_agent_link` gives a Preview link that
+    opens the agent in the dashboard, where they can chat with it or start a
+    voice call. It runs the draft of whoever opens it, so the person sees
+    their own changes before they are published. `get_embed_code` gives the
+    website widget snippet, and says whether the website channel is on and
+    which domains may load it. Turning a channel on happens in the dashboard.
 
 ## Rules
 
@@ -163,8 +164,6 @@ tools that read. Argument details and refusal codes are in
 - **A revision conflict means someone else changed it.** Never resend the
   same payload with the new revision: that would overwrite their change.
   Read it again and redo your change on what you read: `get_workflow` or
-  `get_voice_settings` for a branch save, `list_branches` for a draft edit
-  (a text setting still needs its full current value, as in step 4). A tool
-  or a test whose settings you cannot read back changed in someone else's
-  hands, so ask the person to reconcile it in the dashboard.
+  `get_voice_settings` for a branch save, `read_agent_text` for a text,
+  `get_tool` for a tool and `get_test` for a test.
 - For how a product feature works, call `search_docs`.
