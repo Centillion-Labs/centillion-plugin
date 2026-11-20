@@ -136,6 +136,42 @@ to set up a brand-new account, follow the `setup-centillion` skill.
     website widget snippet, and says whether the website channel is on and
     which domains may load it. Turning a channel on happens in the dashboard.
 
+## Beyond the build workflow
+
+The same server covers the rest of an agent's life. Each group's arguments
+are in [references/tools.md](references/tools.md).
+
+- **The whole configuration at once:** `get_agent_configuration` and
+  `save_draft_configuration` (with its revision and fingerprint),
+  `discard_draft`, `set_agent_tools`.
+- **Settings the six draft fields don't reach:** `update_system_tool` for
+  built-in tools such as end call, transfer and voicemail detection;
+  `update_agent_behavior`; `save_agent_variables`; procedures
+  (`list_procedures`, `save_procedure` and the rest); partial workflow edits
+  (`add_workflow_step`, `connect_workflow_steps` and the rest);
+  pronunciation dictionaries. All of them change your draft.
+- **Tests across agents:** the workspace test library (`list_workspace_tests`,
+  `attach_tests`, folders), `create_test_from_conversation`, and run details
+  (`list_test_runs`, `get_test_run`, `get_test_transcript`).
+- **Knowledge:** read, change, crawl, attach, detach, train and search an
+  agent's knowledge.
+- **Learning from conversations:** search, counts, recordings, analytics,
+  topics, insights and issues. Anything with customer text needs **Allow AI
+  assistants to read conversations**; counts don't.
+- **Branches and teammates:** branch status, traffic history, merge and
+  rebase previews, rebasing a quiet branch, and merge proposals (open,
+  comment, request review). A merge goes through `request_merge`, which a
+  person approves.
+- **Operations:** batches of calls (read, set up as a draft, cancel),
+  WhatsApp accounts, webhooks, workspace settings and credit usage.
+- **Changes a person approves:** deleting an agent, test, knowledge source
+  or issue (`request_delete`), an outbound test call
+  (`request_outbound_call`), calling a batch's missed recipients again
+  (`request_batch_retry`), which agent answers a WhatsApp account
+  (`request_whatsapp_assignment`), webhooks (`request_webhook_change`), and
+  settings that reach customers outside any version, such as the agent's
+  name or its chat widget's look (`request_live_settings`).
+
 ## Rules
 
 - **Secrets never pass through chat.** Do not ask for an API key, token or
@@ -145,11 +181,11 @@ to set up a brand-new account, follow the `setup-centillion` skill.
   **Headers**, where it is stored encrypted. If the person pastes a secret
   anyway, do not repeat it or send it in a tool call; point them to the
   dashboard field instead.
-- **A person approves anything that reaches customers.** `request_publish`,
-  `request_traffic_change`, `request_batch_launch`, `request_archive` and
-  `create_campaign` only return a link. Say that the change waits for
-  approval, and never say it is live until the person confirms they approved
-  it.
+- **A person approves anything that reaches customers.** The approval tools
+  (`request_publish`, `request_traffic_change` and the other `request_`
+  tools except `request_merge_review`) and `create_campaign` only return a
+  link. Say that the change waits for approval, and never say it is live
+  until the person confirms they approved it.
 - **Conversations are readable only where the workspace allows it.**
   `list_conversations` and `get_conversation` refuse until an owner turns on
   **Allow AI assistants to read conversations** in **Workspace settings → AI
