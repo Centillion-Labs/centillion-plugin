@@ -160,9 +160,17 @@ are in [references/tools.md](references/tools.md).
   assistants to read conversations**; counts don't.
 - **Branches and teammates:** branch status, traffic history, merge and
   rebase previews, rebasing a quiet branch, and merge proposals (open,
-  comment, request review). No tool merges or approves.
+  comment, request review). A merge goes through `request_merge`, which a
+  person approves.
 - **Operations:** batches of calls (read, set up as a draft, cancel),
   WhatsApp accounts, webhooks, workspace settings and credit usage.
+- **Changes a person approves:** deleting an agent, test, knowledge source
+  or issue (`request_delete`), an outbound test call
+  (`request_outbound_call`), calling a batch's missed recipients again
+  (`request_batch_retry`), which agent answers a WhatsApp account
+  (`request_whatsapp_assignment`), webhooks (`request_webhook_change`), and
+  settings that reach customers outside any version, such as the agent's
+  name or its chat widget's look (`request_live_settings`).
 
 ## Rules
 
@@ -173,11 +181,11 @@ are in [references/tools.md](references/tools.md).
   **Headers**, where it is stored encrypted. If the person pastes a secret
   anyway, do not repeat it or send it in a tool call; point them to the
   dashboard field instead.
-- **A person approves anything that reaches customers.** `request_publish`,
-  `request_traffic_change`, `request_batch_launch`, `request_archive` and
-  `create_campaign` only return a link. Say that the change waits for
-  approval, and never say it is live until the person confirms they approved
-  it.
+- **A person approves anything that reaches customers.** The approval tools
+  (`request_publish`, `request_traffic_change` and the other `request_`
+  tools except `request_merge_review`) and `create_campaign` only return a
+  link. Say that the change waits for approval, and never say it is live
+  until the person confirms they approved it.
 - **Conversations are readable only where the workspace allows it.**
   `list_conversations` and `get_conversation` refuse until an owner turns on
   **Allow AI assistants to read conversations** in **Workspace settings → AI

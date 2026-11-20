@@ -329,7 +329,7 @@ How an agent's conversations are split between its branches now, and each change
 
 ### `preview_merge` — Preview merge
 
-Show what merging one branch into another would change on the target, without merging: each setting that would change with its value before and after, and the settings both branches changed differently (conflictPaths), with which side they would take (conflictsTake). A person merges in the dashboard. Values of a test made from a customer conversation are left out unless the workspace allows AI assistants to read conversations.
+Show what merging one branch into another would change on the target, without merging: each setting that would change with its value before and after, and the settings both branches changed differently (conflictPaths), with which side they would take (conflictsTake). request_merge asks a person to merge. Values of a test made from a customer conversation are left out unless the workspace allows AI assistants to read conversations.
 
 | Argument | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -502,7 +502,7 @@ List the workspace's secrets, newest first: id, name, and the tools and publishe
 
 ### `list_auth_connections` — List auth connections
 
-List the workspace's auth connections, newest first: id, name, type (oauth2_client_credentials, basic, bearer or oauth2_jwt), provider, and the tools and published agents that sign in with each one. Their secrets are never returned. An HTTP_TOOL signs in with a connection when its configuration's authConnectionId is the connection's id, and a BROWSER_FORM's link request when page.authConnectionId is; the connection then sends the Authorization header, so the tool sets neither an Authorization header of its own nor auth. People add connections in Workspace settings, General, Auth connections.
+List the workspace's auth connections, newest first: id, name, type (oauth2_client_credentials, basic, bearer or oauth2_jwt), provider, and the tools and published agents that sign in with each one. Their secrets are never returned. An HTTP_TOOL or an MCP_SERVER signs in with a connection when its configuration's authConnectionId is the connection's id, and a BROWSER_FORM's link request when page.authConnectionId is; the connection then sends the Authorization header (an MCP_SERVER's discovery and every call to it included), so the tool sets neither an Authorization header of its own nor auth. People add connections in Workspace settings, General, Auth connections.
 
 | Argument | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -824,7 +824,7 @@ Pull Main's changes into a quiet branch as its next version: one other than Main
 
 ### `open_merge_proposal` — Open merge proposal
 
-Open a merge proposal, as you, to merge one of an agent's branches into another, optionally with reviewers from list_reviewers, as Create proposal on the agent's Proposals tab does. It is refused when the branch has nothing new for the target, or when an open proposal already merges the same two branches. Nothing is merged: Merging, approving and requesting changes stay with a person, on the proposal's page in the dashboard (url). preview_merge shows what a merge would change. Nobody is notified, by email or in the dashboard: the proposal, its reviewers and its comments show on the agent's Proposals tab, so tell the people it concerns.
+Open a merge proposal, as you, to merge one of an agent's branches into another, optionally with reviewers from list_reviewers, as Create proposal on the agent's Proposals tab does. It is refused when the branch has nothing new for the target, or when an open proposal already merges the same two branches. Nothing is merged: Approving and requesting changes stay with a person, on the proposal's page in the dashboard (url); request_merge asks a person to merge it. preview_merge shows what a merge would change. Nobody is notified, by email or in the dashboard: the proposal, its reviewers and its comments show on the agent's Proposals tab, so tell the people it concerns.
 
 | Argument | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -837,7 +837,7 @@ Open a merge proposal, as you, to merge one of an agent's branches into another,
 
 ### `update_merge_proposal` — Update merge proposal
 
-Close a merge proposal without merging it, reopen a closed one, or set who reviews it, as the proposal's page does. Removing a reviewer takes their review away, an approval included. Merging, approving and requesting changes stay with a person, on the proposal's page in the dashboard (url). Nobody is notified, by email or in the dashboard: the proposal, its reviewers and its comments show on the agent's Proposals tab, so tell the people it concerns.
+Close a merge proposal without merging it, reopen a closed one, or set who reviews it, as the proposal's page does. Removing a reviewer takes their review away, an approval included. Approving and requesting changes stay with a person, on the proposal's page in the dashboard (url); request_merge asks a person to merge it. Nobody is notified, by email or in the dashboard: the proposal, its reviewers and its comments show on the agent's Proposals tab, so tell the people it concerns.
 
 *Overwrites.*
 
@@ -857,6 +857,16 @@ Add a comment to a merge proposal's activity, as you. A comment is not a verdict
 | `agentId` | string (min length 1, max length 128) | yes | The agent's id, from list_agents. |
 | `proposalId` | string (min length 1, max length 128) | yes | The proposal's id, from list_merge_proposals or get_branch_status. |
 | `comment` | string (min length 1, max length 10,000) | yes | In Markdown. |
+
+### `request_merge_review` — Request merge review
+
+Ask teammates from list_reviewers to review an open merge proposal: they are added to its reviewers, and the reviewers it has stay, each with the review they gave. Only a person reviews: they approve or request changes on the proposal's page. Nobody is notified, by email or in the dashboard: the proposal, its reviewers and its comments show on the agent's Proposals tab, so tell the people it concerns.
+
+| Argument | Type | Required | Description |
+| --- | --- | --- | --- |
+| `agentId` | string (min length 1, max length 128) | yes | The agent's id, from list_agents. |
+| `proposalId` | string (min length 1, max length 128) | yes | The proposal's id, from list_merge_proposals or get_branch_status. |
+| `reviewerIds` | list of string (max items 20) | yes | Teammates' user ids, from list_reviewers. |
 
 ### `save_workflow` — Save workflow
 
@@ -1069,7 +1079,7 @@ Create a workspace tool, shared with you only, checked as the dashboard checks i
 | --- | --- | --- | --- |
 | `name` | string (min length 1, max length 140) | yes |  |
 | `description` | string (max length 8,000) |  |  |
-| `configuration` | object | yes | The tool's settings, with its kind, as the developer API's tools endpoints take them. Header and parameter values and an OAuth client secret are stored and never read back. An HTTP_TOOL or MCP_SERVER sends a workspace secret as a header with secretHeaders, { headerName: secretId }, the id from list_secrets; a header is either in headers or in secretHeaders, not both. An HTTP_TOOL can sign in with OAuth 2.0 client credentials in auth (type oauth2_client_credentials, tokenUrl, clientId, clientSecret, an optional space-separated scope, and clientAuthentication basic or body), and then has no Authorization header of its own. Instead of auth, an HTTP_TOOL, or a BROWSER_FORM's link request in page, can sign in with a workspace auth connection: authConnectionId is the connection's id from list_auth_connections, and the request then has neither auth nor an Authorization header of its own. A BROWSER_FORM fills a web form in a browser: page is { from: url, url } or { from: request, method, url, headers, auth, linkPath } (a request whose JSON answer holds the form's link at linkPath), allowedHosts lists the hosts it may open, fields are { label, parameter, type text, checkbox or select, required }, and before and submit are steps { action click or check, target { by role, role, name } or { by label, label } or { by css, selector } }. |
+| `configuration` | object | yes | The tool's settings, with its kind, as the developer API's tools endpoints take them. Header and parameter values and an OAuth client secret are stored and never read back. An HTTP_TOOL or MCP_SERVER sends a workspace secret as a header with secretHeaders, { headerName: secretId }, the id from list_secrets; a header is either in headers or in secretHeaders, not both. An HTTP_TOOL can sign in with OAuth 2.0 client credentials in auth (type oauth2_client_credentials, tokenUrl, clientId, clientSecret, an optional space-separated scope, and clientAuthentication basic or body), and then has no Authorization header of its own. Instead of auth, an HTTP_TOOL, or a BROWSER_FORM's link request in page, can sign in with a workspace auth connection: authConnectionId is the connection's id from list_auth_connections, and the request then has neither auth nor an Authorization header of its own. An MCP_SERVER signs in the same way with authConnectionId, on discovery and on every call, and then has no Authorization header of its own. A BROWSER_FORM fills a web form in a browser: page is { from: url, url } or { from: request, method, url, headers, auth, linkPath } (a request whose JSON answer holds the form's link at linkPath), allowedHosts lists the hosts it may open, fields are { label, parameter, type text, checkbox or select, required }, and before and submit are steps { action click or check, target { by role, role, name } or { by label, label } or { by css, selector } }. |
 
 ### `update_tool` — Update tool
 
@@ -1457,16 +1467,6 @@ Cancel a campaign that has not finished: it calls nobody else, every waiting lea
 
 Each request tool checks the request the way the dashboard would, then returns a link where an Owner or Member approves or declines it. Nothing changes until then; requests expire after 24 hours.
 
-### `request_merge_review` — Request merge review
-
-Ask teammates from list_reviewers to review an open merge proposal: they are added to its reviewers, and the reviewers it has stay, each with the review they gave. Only a person reviews: they approve or request changes on the proposal's page. Nobody is notified, by email or in the dashboard: the proposal, its reviewers and its comments show on the agent's Proposals tab, so tell the people it concerns.
-
-| Argument | Type | Required | Description |
-| --- | --- | --- | --- |
-| `agentId` | string (min length 1, max length 128) | yes | The agent's id, from list_agents. |
-| `proposalId` | string (min length 1, max length 128) | yes | The proposal's id, from list_merge_proposals or get_branch_status. |
-| `reviewerIds` | list of string (max items 20) | yes | Teammates' user ids, from list_reviewers. |
-
 ### `request_publish` — Request publish
 
 Ask for your draft on a branch to be published as its next version. Nothing is published yet: this returns a link where a person approves or declines it, and shows them the changes and the test runs made on this exact draft with run_tests.
@@ -1541,4 +1541,81 @@ Ask to turn on automatic replies from an agent's paused email sender, so the age
 | --- | --- | --- | --- |
 | `agentId` | string (min length 1, max length 128) | yes | The agent's id, from list_agents. |
 | `connectionId` | string (min length 1, max length 128) |  | The email sender's connection id. Left out, the agent's only paused email sender. |
+
+### `request_merge` — Request merge
+
+Ask for one of an agent's branches to be merged into another, or for an open merge proposal to be merged. The merge is the target's next version: on a branch customers reach, they get it at once. Nothing is merged yet: this returns a link where a person approves or declines it, and shows them what preview_merge shows. If either branch gets a new version before then, or the settings both changed are no longer the ones shown, the request can no longer run.
+
+| Argument | Type | Required | Description |
+| --- | --- | --- | --- |
+| `agentId` | string (min length 1, max length 128) | yes | The agent's id, from list_agents. |
+| `merge` | object | yes | A branch into another, or an open merge proposal, which merges its branch into its target. |
+| `archiveSource` | boolean |  | Archive the merged branch afterwards, as the dashboard does unless told not to. Main is never archived. |
+
+### `request_delete` — Request delete
+
+Ask for something to be deleted for good: an agent with its conversations, a test on an agent's Main (as a new version of Main), a library test (agents keep their copies), a knowledge source of the workspace (taken out of every agent that has it), or an issue. Nothing is deleted yet: this returns a link where a person approves or declines it, with what goes with it and what uses it. An agent customers still reach through a channel, a phone number or a running campaign is refused until those are turned off, moved or cancelled. If what is deleted changes before then, the request can no longer run.
+
+*Overwrites.*
+
+| Argument | Type | Required | Description |
+| --- | --- | --- | --- |
+| `target` | object | yes |  |
+
+### `request_outbound_call` — Request outbound call
+
+Ask for one outbound test call from a workspace number to a number you name, as the Phone page's Test call places it: the agent calls, using call credits. Nothing is dialed yet: this returns a link where a person approves or declines it; approving takes their agreement to the outbound communications terms. If the branch it answers on gets a new version before then, the request can no longer run.
+
+*Reaches outside the workspace.*
+
+| Argument | Type | Required | Description |
+| --- | --- | --- | --- |
+| `phoneLineId` | string (min length 1, max length 128) | yes | The calling number's id, from list_phone_numbers. |
+| `agentId` | string (min length 1, max length 128) | yes | The agent's id, from list_agents. |
+| `toE164` | string (min length 7, max length 32) | yes | The number to call, in international format, such as +14155550123. |
+| `branchId` | string (min length 1, max length 128) |  | Answer with this published branch. Left out, the call follows the agent's traffic split. |
+| `variables` | object |  | Values for the agent's variables on this call, as Vars sets them. |
+| `answeringMachineDetection` | boolean |  | Hang up on voicemail, as the Test call's switch does. |
+
+### `request_batch_retry` — Request batch retry
+
+Ask for a finished or cancelled batch's failed and unanswered recipients to be called again, as Retry on the batch does: a new batch of them, launched when approved. Recipients who opted out or whose calls need review are left out. Nothing is called yet: this returns a link where a person approves or declines it, and how many are called again; approving takes their agreement to the outbound terms. If the batch changes, or would call other recipients, before then, the request can no longer run. The recipients' numbers are listed only where the workspace lets AI assistants read conversations.
+
+*Reaches outside the workspace.*
+
+| Argument | Type | Required | Description |
+| --- | --- | --- | --- |
+| `batchId` | string (min length 1, max length 128) | yes | The finished or cancelled batch's id, from list_batch_calls. |
+
+### `request_whatsapp_assignment` — Request WhatsApp assignment
+
+Ask for a WhatsApp account to be answered by an agent, or by none, as the account's sheet on the WhatsApp page assigns it. The agent answers new messages at once; the agent it replaces keeps its conversations. Nothing changes yet: this returns a link where a person approves or declines it. If the account is assigned to another agent before then, the request can no longer run.
+
+*Overwrites.*
+
+| Argument | Type | Required | Description |
+| --- | --- | --- | --- |
+| `connectionId` | string (min length 1, max length 128) | yes | The WhatsApp account's id, from list_whatsapp_accounts. |
+| `agentId` | string or null | yes | The agent to answer the account, or null for none. |
+
+### `request_webhook_change` — Request webhook change
+
+Ask to add a workspace webhook endpoint, change its URL, description, events or whether it is on, or delete it with its delivery log, as Workspace settings → Webhooks does. An endpoint that is on receives customers' conversation data at its URL. Nothing changes yet: this returns a link where a person approves or declines it. A new endpoint's signing secret is made when it is approved and shown once to the approver, never to you. If the endpoint is changed before then, the request can no longer run.
+
+*Overwrites, reaches outside the workspace.*
+
+| Argument | Type | Required | Description |
+| --- | --- | --- | --- |
+| `change` | object | yes |  |
+
+### `request_live_settings` — Request live settings
+
+Ask to change a setting that reaches customers at once, outside any version: the agent's name, its chat widget's look, its Topics settings, an evaluation criterion or a shared analysis library item on the analysis its editor has open, or how its conversations start (the initiation webhook, by header names only; a header's value is a secret a person enters in the dashboard). Nothing changes yet: this returns a link where a person approves or declines it, with the setting before and after. If the setting is changed before then, the request can no longer run.
+
+*Overwrites.*
+
+| Argument | Type | Required | Description |
+| --- | --- | --- | --- |
+| `agentId` | string (min length 1, max length 128) | yes | The agent's id, from list_agents. |
+| `setting` | object | yes |  |
 
