@@ -89,11 +89,15 @@ This is optional. Offer it once, after their agent works.
 The goal: in this session, the person talks to an agent that knows their
 business.
 
-1. **Ask one question at most.** If you don't know what the business does,
-   ask: "What's your business, and what should the agent handle on calls and
-   chats? A link to your website helps." Use whatever they already told you.
-   Hours, languages, handoffs and integrations can wait until the agent
-   exists.
+1. **Ask the one question, or skip it.** If the person has already said what
+   their business is, skip to the next step. Otherwise send this message,
+   word for word, as your whole reply, and wait for the answer:
+
+   > You're connected. What's your business, and what should your agent
+   > handle on calls and chats? A link to your website helps.
+
+   Choose everything else yourself: hours, languages, handoffs, voice and
+   integrations. The person changes them after they've tried the agent.
 2. **Call `create_agent`** with:
    - `name`: the business plus the job, for example
      "Bright Smile Dental receptionist".
@@ -116,7 +120,9 @@ business.
    - Call `save_test` for three short tests of the main jobs, for example
      "books an appointment", "gives the opening hours" and "doesn't invent a
      price".
-   - Then call `run_tests`, and `get_test_results` once they finish.
+   - Tell the person in one line that the tests use some of the workspace's
+     free credits. Then call `run_tests` with `allowMessageCredits: true`,
+     and `get_test_results` once they finish.
    - If a test clearly fails, fix the instructions with `edit_agent_text` and
      run the tests once more. Don't loop.
 5. **Let them try it.** Call `get_agent_link` and give the person the Preview
