@@ -12,6 +12,19 @@ builds their first agent with them, in this session.
 
 Don't make the person repeat their request. Carry it through to step 5.
 
+## At a glance
+
+If you keep only one part of this guide, keep these five lines:
+
+1. Connect: run `npx -y centillion@latest onboard` and follow its JSON until `next` is `ready`.
+2. Then ask exactly one question, word for word, and wait for the answer:
+   "You're connected. What's your business, and what should your agent handle on calls and chats? A link to your website helps."
+3. Ask nothing else: choose the role, hours, languages and voice yourself.
+4. Build: `create_agent`, knowledge, three tests (`save_test`, then `run_tests` with `testIds`).
+5. Finish with `get_agent_link`: give the person its `previewUrl`. Publish nothing unless they ask.
+
+When the CLI's JSON has `firstAgent`, follow those steps; they say the same.
+
 ## 1. Use what's already connected
 
 Check in this order and stop at the first one that works:
@@ -114,19 +127,21 @@ business.
    - If they have a website, call `add_knowledge_website` for the home page
      and the two or three pages that answer the most questions: services,
      prices, hours, FAQ.
-   - Otherwise call `add_knowledge_text` with what they told you.
+   - Otherwise call `add_knowledge_text` with `name` and `content`: what
+     they told you.
    - Imports run in the background. `list_knowledge_sources` shows progress.
 4. **Test it.**
    - Call `save_test` for three short tests of the main jobs, for example
      "books an appointment", "gives the opening hours" and "doesn't invent a
      price".
    - Tell the person in one line that the tests use some of the workspace's
-     free credits. Then call `run_tests` with `allowMessageCredits: true`,
-     and `get_test_results` once they finish.
+     free credits. Then call `run_tests` with `testIds` (the ids `save_test`
+     returned) and `allowMessageCredits: true`, and `get_test_results` once
+     they finish.
    - If a test clearly fails, fix the instructions with `edit_agent_text` and
      run the tests once more. Don't loop.
-5. **Let them try it.** Call `get_agent_link` and give the person the Preview
-   link. It opens their agent in the Centillion dashboard, where they are
+5. **Let them try it.** Call `get_agent_link` and give the person its
+   `previewUrl`, the Preview link. It opens their agent in the Centillion dashboard, where they are
    already signed in from the browser step. There they can chat with it or
    start a voice call. Send them there: this is the moment the agent becomes
    real.
