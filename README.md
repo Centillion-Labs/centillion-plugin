@@ -34,7 +34,9 @@ claude plugin install centillion@centillion
 Third-party marketplaces don't auto-update by default: turn auto-update on
 for `centillion` under **Marketplaces** in `/plugin`, or run
 `claude plugin marketplace update centillion` and then
-`claude plugin update centillion@centillion` to get new commits.
+`claude plugin update centillion@centillion` to get the latest version.
+Every merge to `main` publishes a new version, listed under
+[Releases](https://github.com/Centillion-Labs/centillion-plugin/releases).
 
 Codex:
 

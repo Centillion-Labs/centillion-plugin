@@ -1,0 +1,104 @@
+name: Release
+
+# Every merge to main gets a new patch version, written into each plugin
+# manifest, plus a matching tag and GitHub Release. Installed copies compare
+# versions to find updates, so the number has to change on every merge.
+#
+# Each run releases whatever is on main when it starts. A run that finds the
+# latest version tag already on main's tip has nothing new and only makes sure
+# that tag has its GitHub Release, so reruns and queued runs never bump twice.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # The bot's own release commit does not start another release.
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Pick the next version
+        id: version
+        run: |
+          last=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)
+          if [ -z "$last" ]; then
+            last="v$(jq -r .version plugins/centillion/.codex-plugin/plugin.json)"
+            echo "$last" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+              || { echo "No version tag and no valid manifest version: $last"; exit 1; }
+            echo "has_tag=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_tag=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$(git rev-parse "$last^{commit}" 2>/dev/null)" = "$(git rev-parse HEAD)" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "main is already released as $last"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+          IFS=. read -r major minor patch <<< "${last#v}"
+          echo "previous=$last" >> "$GITHUB_OUTPUT"
+          echo "next=$major.$minor.$((patch + 1))" >> "$GITHUB_OUTPUT"
+
+      - name: Write the version into the manifests
+        if: steps.version.outputs.skip == 'false'
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          for f in plugins/centillion/.claude-plugin/plugin.json \
+                   plugins/centillion/.codex-plugin/plugin.json \
+                   .cursor-plugin/plugin.json; do
+            jq --arg v "$NEXT" '.version = $v' "$f" > "$f.tmp"
+            mv "$f.tmp" "$f"
+          done
+
+      - name: Commit and tag
+        if: steps.version.outputs.skip == 'false'
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          # --allow-empty: a merge may already carry the next version.
+          git commit -a --allow-empty -m "release: v$NEXT"
+          git tag "v$NEXT"
+          # Atomic: the tag lands only if main accepts the commit too.
+          git push --atomic origin HEAD:main "v$NEXT"
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SKIP: ${{ steps.version.outputs.skip }}
+          NEXT: ${{ steps.version.outputs.next }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+          HAS_TAG: ${{ steps.version.outputs.has_tag }}
+        run: |
+          release() {
+            if gh release view "$1" >/dev/null 2>&1; then
+              echo "$1 already has a release"
+            elif [ -n "${2:-}" ]; then
+              gh release create "$1" --title "$1" --generate-notes --notes-start-tag "$2"
+            else
+              gh release create "$1" --title "$1" --generate-notes
+            fi
+          }
+          # The previous tag first, in case an earlier run tagged it but never
+          # published its Release.
+          if [ "$HAS_TAG" = "true" ]; then release "$PREVIOUS"; fi
+          if [ "$SKIP" = "false" ]; then
+            if [ "$HAS_TAG" = "true" ]; then release "v$NEXT" "$PREVIOUS"; else release "v$NEXT"; fi
+          fi
