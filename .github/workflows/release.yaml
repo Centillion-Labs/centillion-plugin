@@ -3,10 +3,15 @@ name: Release
 # Every merge to main gets a new patch version, written into each plugin
 # manifest, plus a matching tag and GitHub Release. Installed copies compare
 # versions to find updates, so the number has to change on every merge.
+#
+# Each run releases whatever is on main when it starts. A run that finds the
+# latest version tag already on main's tip has nothing new and only makes sure
+# that tag has its GitHub Release, so reruns and queued runs never bump twice.
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,10 +23,10 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    # The release commit itself lands on main; skip it.
-    if: ${{ !startsWith(github.event.head_commit.message, 'release: v') }}
+    # The bot's own release commit does not start another release.
+    if: ${{ github.actor != 'github-actions[bot]' }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: main
           fetch-depth: 0
@@ -29,17 +34,28 @@ jobs:
       - name: Pick the next version
         id: version
         run: |
-          last=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          last=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)
           if [ -z "$last" ]; then
             last="v$(jq -r .version plugins/centillion/.codex-plugin/plugin.json)"
+            echo "$last" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+              || { echo "No version tag and no valid manifest version: $last"; exit 1; }
+            echo "has_tag=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_tag=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$(git rev-parse "$last^{commit}" 2>/dev/null)" = "$(git rev-parse HEAD)" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "main is already released as $last"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
           IFS=. read -r major minor patch <<< "${last#v}"
-          next="$major.$minor.$((patch + 1))"
           echo "previous=$last" >> "$GITHUB_OUTPUT"
-          echo "next=$next" >> "$GITHUB_OUTPUT"
-          echo "Releasing v$next (previous $last)"
+          echo "next=$major.$minor.$((patch + 1))" >> "$GITHUB_OUTPUT"
 
       - name: Write the version into the manifests
+        if: steps.version.outputs.skip == 'false'
         env:
           NEXT: ${{ steps.version.outputs.next }}
         run: |
@@ -50,19 +66,33 @@ jobs:
             mv "$f.tmp" "$f"
           done
 
-      - name: Commit, tag and release
+      - name: Commit and tag
+        if: steps.version.outputs.skip == 'false'
         env:
           NEXT: ${{ steps.version.outputs.next }}
-          PREVIOUS: ${{ steps.version.outputs.previous }}
-          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git commit -am "release: v$NEXT"
           git tag "v$NEXT"
-          git push origin HEAD:main "v$NEXT"
-          if git rev-parse -q --verify "refs/tags/$PREVIOUS" >/dev/null; then
-            gh release create "v$NEXT" --title "v$NEXT" --generate-notes --notes-start-tag "$PREVIOUS"
+          # Atomic: the tag lands only if main accepts the commit too.
+          git push --atomic origin HEAD:main "v$NEXT"
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SKIP: ${{ steps.version.outputs.skip }}
+          NEXT: ${{ steps.version.outputs.next }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+          HAS_TAG: ${{ steps.version.outputs.has_tag }}
+        run: |
+          if [ "$SKIP" = "true" ]; then tag="$PREVIOUS"; else tag="v$NEXT"; fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "$tag already has a release"
+            exit 0
+          fi
+          if [ "$SKIP" = "false" ] && [ "$HAS_TAG" = "true" ]; then
+            gh release create "$tag" --title "$tag" --generate-notes --notes-start-tag "$PREVIOUS"
           else
-            gh release create "v$NEXT" --title "v$NEXT" --generate-notes
+            gh release create "$tag" --title "$tag" --generate-notes
           fi
