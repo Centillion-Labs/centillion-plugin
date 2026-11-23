@@ -1,0 +1,68 @@
+name: Release
+
+# Every merge to main gets a new patch version, written into each plugin
+# manifest, plus a matching tag and GitHub Release. Installed copies compare
+# versions to find updates, so the number has to change on every merge.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # The release commit itself lands on main; skip it.
+    if: ${{ !startsWith(github.event.head_commit.message, 'release: v') }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Pick the next version
+        id: version
+        run: |
+          last=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          if [ -z "$last" ]; then
+            last="v$(jq -r .version plugins/centillion/.codex-plugin/plugin.json)"
+          fi
+          IFS=. read -r major minor patch <<< "${last#v}"
+          next="$major.$minor.$((patch + 1))"
+          echo "previous=$last" >> "$GITHUB_OUTPUT"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$next (previous $last)"
+
+      - name: Write the version into the manifests
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          for f in plugins/centillion/.claude-plugin/plugin.json \
+                   plugins/centillion/.codex-plugin/plugin.json \
+                   .cursor-plugin/plugin.json; do
+            jq --arg v "$NEXT" '.version = $v' "$f" > "$f.tmp"
+            mv "$f.tmp" "$f"
+          done
+
+      - name: Commit, tag and release
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -am "release: v$NEXT"
+          git tag "v$NEXT"
+          git push origin HEAD:main "v$NEXT"
+          if git rev-parse -q --verify "refs/tags/$PREVIOUS" >/dev/null; then
+            gh release create "v$NEXT" --title "v$NEXT" --generate-notes --notes-start-tag "$PREVIOUS"
+          else
+            gh release create "v$NEXT" --title "v$NEXT" --generate-notes
+          fi
