@@ -12,5 +12,6 @@
     "ai-agents",
     "customer-support",
     "mcp"
-  ]
+  ],
+  "version": "0.2.4"
 }

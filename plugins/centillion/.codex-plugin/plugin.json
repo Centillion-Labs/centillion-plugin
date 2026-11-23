@@ -1,6 +1,6 @@
 {
   "name": "centillion",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Build, test and run Centillion AI agents for phone calls, website chat and messages from your AI assistant. Publishing, phone numbers and calls wait for a person's approval in the Centillion dashboard.",
   "author": {
     "name": "Centillion Labs",
