@@ -20,14 +20,14 @@
   "interface": {
     "displayName": "Centillion",
     "shortDescription": "AI agents for calls and chats",
-    "longDescription": "Centillion runs AI agents that answer a business's phone calls, website chat and messages. Connect your Centillion workspace to build and change agents from chat: write their instructions and greeting, add knowledge, write tests and run them on your draft, read test results, and steer outbound campaigns. Anything that reaches customers or costs money, such as publishing a version, shifting traffic, buying or routing a phone number or launching calls, only creates a request that a person approves in the Centillion dashboard. Sign-in is OAuth into one workspace with your role's permissions. Secrets are never returned, and conversations stay private unless a workspace owner allows assistants to read them.",
+    "longDescription": "Centillion runs AI agents that answer a business's phone calls, website chat and messages. Connect your Centillion workspace to build and change agents from chat: write their instructions and greeting, add knowledge, write tests and run them on your draft, read test results, and steer outbound campaigns. Anything that reaches customers or costs money, such as publishing a version, shifting traffic, buying or routing a phone number or launching calls, only creates a request that a person approves in the Centillion dashboard. Sign-in is OAuth into one workspace with your role's permissions. The plugin never asks you for personal data such as government ID numbers, payment card details or health information, and never returns secrets. Your customers' conversations, recordings and contact details stay hidden from assistants unless a workspace owner turns on assistant access to them in the dashboard; it is off by default.",
     "developerName": "Centillion Labs",
     "category": "Productivity",
     "capabilities": [],
     "defaultPrompt": [
       "List my Centillion agents and what each one does",
       "Write tests for my agent's booking flow and run them on my draft",
-      "Build an AI receptionist for my dental clinic"
+      "Build an AI receptionist for my hair salon"
     ],
     "websiteURL": "https://cntillion.com/",
     "privacyPolicyURL": "https://cntillion.com/privacy",
@@ -52,13 +52,13 @@
             },
             {
               "description": "Creates an agent",
-              "prompt": "Create a customer support agent called Bright Smile Dental receptionist that answers questions about our opening hours, Monday to Friday 8am to 5pm",
+              "prompt": "Create a customer support agent called Bright Cuts Salon receptionist that answers questions about our opening hours, Monday to Friday 8am to 5pm",
               "tools_triggered": "create_agent",
               "expected_behavior": "Creates the agent and returns its id and name. It answers nobody until a channel is connected in the dashboard."
             },
             {
               "description": "Writes and runs a test on the draft",
-              "prompt": "Add a test to my Bright Smile Dental receptionist that checks it gives the opening hours, then run it on my draft",
+              "prompt": "Add a test to my Bright Cuts Salon receptionist that checks it gives the opening hours, then run it on my draft",
               "tools_triggered": "save_test, run_tests",
               "expected_behavior": "Saves the test in the person's draft and starts a test run on that draft; nothing is published."
             },
@@ -70,7 +70,7 @@
             },
             {
               "description": "Asks for approval to publish",
-              "prompt": "Publish my Bright Smile Dental receptionist's draft",
+              "prompt": "Publish my Bright Cuts Salon receptionist's draft",
               "tools_triggered": "request_publish",
               "expected_behavior": "Returns an approval link for a person to approve in the Centillion dashboard; nothing is published yet."
             }

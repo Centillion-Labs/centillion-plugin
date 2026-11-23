@@ -113,7 +113,7 @@ business.
    integrations. The person changes them after they've tried the agent.
 2. **Call `create_agent`** with:
    - `name`: the business plus the job, for example
-     "Bright Smile Dental receptionist".
+     "Bright Cuts Salon receptionist".
    - `role`: `customer-support` by default. Use `sales-agent` for qualifying
      leads and `shopping-assistant` for an online store.
    - `instructions`: write them for this business. Cover who the agent is,
