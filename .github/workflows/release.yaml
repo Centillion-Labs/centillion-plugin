@@ -73,7 +73,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git commit -am "release: v$NEXT"
+          # --allow-empty: a merge may already carry the next version.
+          git commit -a --allow-empty -m "release: v$NEXT"
           git tag "v$NEXT"
           # Atomic: the tag lands only if main accepts the commit too.
           git push --atomic origin HEAD:main "v$NEXT"
@@ -86,13 +87,18 @@ jobs:
           PREVIOUS: ${{ steps.version.outputs.previous }}
           HAS_TAG: ${{ steps.version.outputs.has_tag }}
         run: |
-          if [ "$SKIP" = "true" ]; then tag="$PREVIOUS"; else tag="v$NEXT"; fi
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "$tag already has a release"
-            exit 0
-          fi
-          if [ "$SKIP" = "false" ] && [ "$HAS_TAG" = "true" ]; then
-            gh release create "$tag" --title "$tag" --generate-notes --notes-start-tag "$PREVIOUS"
-          else
-            gh release create "$tag" --title "$tag" --generate-notes
+          release() {
+            if gh release view "$1" >/dev/null 2>&1; then
+              echo "$1 already has a release"
+            elif [ -n "${2:-}" ]; then
+              gh release create "$1" --title "$1" --generate-notes --notes-start-tag "$2"
+            else
+              gh release create "$1" --title "$1" --generate-notes
+            fi
+          }
+          # The previous tag first, in case an earlier run tagged it but never
+          # published its Release.
+          if [ "$HAS_TAG" = "true" ]; then release "$PREVIOUS"; fi
+          if [ "$SKIP" = "false" ]; then
+            if [ "$HAS_TAG" = "true" ]; then release "v$NEXT" "$PREVIOUS"; else release "v$NEXT"; fi
           fi
