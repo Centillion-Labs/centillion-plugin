@@ -31,6 +31,11 @@ claude plugin marketplace add Centillion-Labs/centillion-plugin
 claude plugin install centillion@centillion
 ```
 
+Third-party marketplaces don't auto-update by default: turn auto-update on
+for `centillion` under **Marketplaces** in `/plugin`, or run
+`claude plugin marketplace update centillion` and then
+`claude plugin update centillion@centillion` to get new commits.
+
 Codex:
 
 ```bash
