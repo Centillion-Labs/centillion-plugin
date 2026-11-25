@@ -82,3 +82,7 @@ manifest for Claude Code (`.claude-plugin/plugin.json`) and Codex
 point at it (`.claude-plugin/marketplace.json`,
 `.agents/plugins/marketplace.json`), the Cursor manifest, and the MCP Registry
 entry (`server.json`).
+
+The OpenAI plugin portal wants a different MCP auth format, kept in
+`openai/mcp.json`. Each release attaches `centillion-openai-v<version>.zip`,
+the plugin with that file in place of `.mcp.json`, ready to upload there.

@@ -102,3 +102,21 @@ jobs:
           if [ "$SKIP" = "false" ]; then
             if [ "$HAS_TAG" = "true" ]; then release "v$NEXT" "$PREVIOUS"; else release "v$NEXT"; fi
           fi
+
+      # The OpenAI plugin portal rejects the `oauth` key Claude Code reads in
+      # .mcp.json and wants auth under extensions.com.openai instead, while
+      # the Codex app still drops a server that has that key. So the shared
+      # .mcp.json stays as it is, and only the ZIP uploaded to the portal
+      # carries openai/mcp.json in its place.
+      - name: Attach the OpenAI portal ZIP
+        if: steps.version.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEXT: ${{ steps.version.outputs.next }}
+        run: |
+          build=$(mktemp -d)
+          cp -R plugins/centillion/. "$build/"
+          cp openai/mcp.json "$build/.mcp.json"
+          zip_path="$RUNNER_TEMP/centillion-openai-v$NEXT.zip"
+          (cd "$build" && zip -qr "$zip_path" .)
+          gh release upload "v$NEXT" "$zip_path"

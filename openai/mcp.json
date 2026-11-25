@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "centillion": {
+      "type": "streamable-http",
+      "url": "https://app.cntillion.com/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": { "mode": "dcr" }
+          }
+        }
+      }
+    }
+  }
+}
