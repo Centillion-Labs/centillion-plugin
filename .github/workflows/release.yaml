@@ -108,23 +108,32 @@ jobs:
       # the Codex app still drops a server that has that key. So the shared
       # .mcp.json stays as it is, and only the ZIP uploaded to the portal
       # carries openai/mcp.json in its place.
-      # A rerun on an already released main still uploads the ZIP if an
-      # earlier run tagged the release but failed before attaching it.
+      # Checks the previous tag too, so a ZIP an earlier run failed to attach
+      # is added on the next run even after main has moved on. Each ZIP is
+      # built from its own tag, never from the current checkout.
       - name: Attach the OpenAI portal ZIP
         env:
           GH_TOKEN: ${{ github.token }}
           SKIP: ${{ steps.version.outputs.skip }}
           NEXT: ${{ steps.version.outputs.next }}
           PREVIOUS: ${{ steps.version.outputs.previous }}
+          HAS_TAG: ${{ steps.version.outputs.has_tag }}
         run: |
-          if [ "$SKIP" = "true" ]; then tag="$PREVIOUS"; else tag="v$NEXT"; fi
-          name="centillion-openai-$tag.zip"
-          if gh release view "$tag" --json assets --jq '.assets[].name' | grep -qxF "$name"; then
-            echo "$tag already has $name"
-            exit 0
+          attach() {
+            tag="$1"
+            name="centillion-openai-$tag.zip"
+            if gh release view "$tag" --json assets --jq '.assets[].name' | grep -qxF "$name"; then
+              echo "$tag already has $name"
+              return
+            fi
+            build=$(mktemp -d)
+            git archive "$tag" plugins/centillion openai/mcp.json | tar -x -C "$build"
+            cp "$build/openai/mcp.json" "$build/plugins/centillion/.mcp.json"
+            (cd "$build/plugins/centillion" && zip -qr "$RUNNER_TEMP/$name" .)
+            gh release upload "$tag" "$RUNNER_TEMP/$name"
+          }
+          # Tags made before openai/mcp.json existed get no ZIP.
+          if [ "$HAS_TAG" = "true" ] && git cat-file -e "$PREVIOUS:openai/mcp.json" 2>/dev/null; then
+            attach "$PREVIOUS"
           fi
-          build=$(mktemp -d)
-          cp -R plugins/centillion/. "$build/"
-          cp openai/mcp.json "$build/.mcp.json"
-          (cd "$build" && zip -qr "$RUNNER_TEMP/$name" .)
-          gh release upload "$tag" "$RUNNER_TEMP/$name"
+          if [ "$SKIP" = "false" ]; then attach "v$NEXT"; fi
